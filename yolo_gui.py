@@ -1,11 +1,12 @@
 """
 基于 Gradio 的智能书籍检测系统
-支持: 图片上传 / 摄像头拍摄 / 模型切换 / 结果可视化
+支持: 图片上传 / 摄像头拍摄 / 模型切换 / 结果可视化.
 """
 
 import os
+
 import cv2
-import numpy as np
+
 from ultralytics import YOLO
 
 # ============================================================
@@ -19,14 +20,15 @@ MODELS = {
     "C2fSE (mAP50=0.903)": "runs/detect/improve_C2fSE/weights/best.pt",
 }
 
-DEFAULT_MODEL = list(MODELS.keys())[0]
+DEFAULT_MODEL = next(iter(MODELS.keys()))
 CONF_THRESHOLD = 0.25
+
 
 # ============================================================
 # 核心检测函数
 # ============================================================
 def load_model(model_name):
-    """加载选定的模型"""
+    """加载选定的模型."""
     path = MODELS.get(model_name)
     if path and os.path.exists(path):
         return YOLO(path)
@@ -38,7 +40,7 @@ def load_model(model_name):
 
 
 def detect_and_draw(image, model):
-    """执行检测并绘制结果"""
+    """执行检测并绘制结果."""
     results = model(image, conf=CONF_THRESHOLD)
     result = results[0]
 
@@ -65,7 +67,7 @@ def detect_and_draw(image, model):
 # Gradio 回调
 # ============================================================
 def process_image(image, model_name, conf):
-    """处理上传的图片"""
+    """处理上传的图片."""
     global CONF_THRESHOLD
     CONF_THRESHOLD = conf
 
@@ -78,7 +80,7 @@ def process_image(image, model_name, conf):
 
 
 def process_video(video_path, model_name, conf):
-    """处理视频文件"""
+    """处理视频文件."""
     global CONF_THRESHOLD
     CONF_THRESHOLD = conf
 
@@ -93,9 +95,7 @@ def process_video(video_path, model_name, conf):
 
     output_path = "predictions/video_output.mp4"
     os.makedirs("predictions", exist_ok=True)
-    writer = cv2.VideoWriter(
-        output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h)
-    )
+    writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
 
     frame_count = 0
     book_count = 0
@@ -121,7 +121,7 @@ def process_video(video_path, model_name, conf):
 # Gradio 界面
 # ============================================================
 def create_ui():
-    """创建 Gradio 界面"""
+    """创建 Gradio 界面."""
     import gradio as gr
 
     css = """
@@ -139,15 +139,15 @@ def create_ui():
         with gr.Row():
             with gr.Column(scale=1):
                 model_selector = gr.Dropdown(
-                    choices=list(MODELS.keys()),
-                    value=DEFAULT_MODEL,
-                    label="🔧 检测模型",
-                    info="切换不同改进版本的模型"
+                    choices=list(MODELS.keys()), value=DEFAULT_MODEL, label="🔧 检测模型", info="切换不同改进版本的模型"
                 )
                 conf_slider = gr.Slider(
-                    minimum=0.05, maximum=0.95, value=0.25, step=0.05,
+                    minimum=0.05,
+                    maximum=0.95,
+                    value=0.25,
+                    step=0.05,
                     label="🎯 置信度阈值",
-                    info="降低阈值可检出更多书籍，但可能增加误检"
+                    info="降低阈值可检出更多书籍，但可能增加误检",
                 )
 
                 with gr.Accordion("📊 模型性能参考", open=False):
@@ -162,10 +162,7 @@ def create_ui():
 
             with gr.Column(scale=2):
                 with gr.Tab("🖼️ 图片检测"):
-                    image_input = gr.Image(
-                        type="numpy", label="上传图片",
-                        sources=["upload", "clipboard"]
-                    )
+                    image_input = gr.Image(type="numpy", label="上传图片", sources=["upload", "clipboard"])
                     img_btn = gr.Button("🔍 开始检测", variant="primary", size="lg")
                     with gr.Row():
                         image_output = gr.Image(type="numpy", label="检测结果")
