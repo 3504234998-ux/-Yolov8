@@ -26,7 +26,6 @@ from ultralytics.nn.modules import (
     SPPCSPC,
     SPPELAN,
     SPPF,
-    SimSPPF,
     A2C2f,
     AConv,
     ADown,
@@ -71,6 +70,7 @@ from ultralytics.nn.modules import (
     SCDown,
     Segment,
     Segment26,
+    SimSPPF,
     TorchVision,
     WorldDetect,
     YOLOEDetect,
@@ -520,9 +520,11 @@ class DetectionModel(BaseModel):
         if iou_type is None:
             iou_type = getattr(self.args, "iou_type", None)
         from ultralytics.utils.loss import IOU_TYPE_OVERRIDE
+
         if IOU_TYPE_OVERRIDE is not None:
             iou_type = IOU_TYPE_OVERRIDE
         from ultralytics.utils import LOGGER
+
         LOGGER.info(f"🔍 init_criterion: iou_type={iou_type}")
         return E2ELoss(self) if getattr(self, "end2end", False) else v8DetectionLoss(self, iou_type=iou_type)
 
