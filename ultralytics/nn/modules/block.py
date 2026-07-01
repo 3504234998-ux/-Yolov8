@@ -32,10 +32,10 @@ __all__ = (
     "Bottleneck",
     "BottleneckCSP",
     "C2f",
-    "C2f_SE",
     "C2fAttn",
     "C2fCIB",
     "C2fPSA",
+    "C2f_SE",
     "C3Ghost",
     "C3k2",
     "C3x",
@@ -237,6 +237,7 @@ class SPPF(nn.Module):
         y = self.cv2(torch.cat(y, 1))
         return y + x if getattr(self, "add", False) else y
 
+
 class C1(nn.Module):
     """CSP Bottleneck with 1 convolution."""
 
@@ -284,10 +285,11 @@ class C2(nn.Module):
         a, b = self.cv1(x).chunk(2, 1)
         return self.cv2(torch.cat((self.m(a), b), 1))
 
+
 # SE attention
 class SEAttention(nn.Module):
     def __init__(self, channel=512, reduction=16):
-        super(SEAttention, self).__init__()
+        super().__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.l1 = nn.Linear(channel, channel // reduction, bias=False)
         self.relu = nn.ReLU(inplace=True)
@@ -313,27 +315,29 @@ class SE_Bottleneck(nn.Module):
         self.cv2 = Conv(c_, c2, k[1], 1, g=g)
         self.se = SEAttention(c2, 16)
         self.add = shortcut and c1 == c2
-        
+
     def forward(self, x):
         return x + self.se(self.cv2(self.cv1(x))) if self.add else self.se(self.cv2(self.cv1(x)))
-        
+
+
 class C2f_SE(nn.Module):
     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
         super().__init__()
         self.c = int(c2 * e)
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv((2 + n) * self.c, c2, 1)
-        self.m = nn.ModuleList(SE_Bottleneck(self.c, self.c, shortcut, g, k=
-((3, 3), (3, 3)), e=1.0) for _ in range(n))
+        self.m = nn.ModuleList(SE_Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
 
     def forward(self, x):
         y = list(self.cv1(x).chunk(2, 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
+
     def forward_split(self, x):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
+
 
 class C2f(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
@@ -2119,11 +2123,12 @@ class RealNVP(nn.Module):
 
 # ===================== YOLOv8 改进模块 =====================
 
+
 class SimSPPF(nn.Module):
     """Simplified Spatial Pyramid Pooling - Fast (SimSPPF) layer.
 
-    Replaces the MaxPool2d operations in SPPF with Conv+ReLU sequences for
-    potentially better gradient flow and simplified computation.
+    Replaces the MaxPool2d operations in SPPF with Conv+ReLU sequences for potentially better gradient flow and
+    simplified computation.
 
     Reference: https://github.com/ultralytics/ultralytics
     """
@@ -2161,8 +2166,8 @@ class SimSPPF(nn.Module):
 class SPPCSPC(nn.Module):
     """Spatial Pyramid Pooling with Cross Stage Partial Connection (SPPCSPC).
 
-    Combines SPP with CSP structure for enhanced multi-scale feature fusion.
-    Based on the SPPCSPC module from YOLOv7, adapted for YOLOv8 compatibility.
+    Combines SPP with CSP structure for enhanced multi-scale feature fusion. Based on the SPPCSPC module from YOLOv7,
+    adapted for YOLOv8 compatibility.
 
     Reference: https://arxiv.org/abs/2207.02696 (YOLOv7)
     """
@@ -2198,7 +2203,9 @@ class SPPCSPC(nn.Module):
 class DWConv_Bottleneck(nn.Module):
     """Bottleneck block with Depthwise Separable Convolution for lightweight models."""
 
-    def __init__(self, c1: int, c2: int, shortcut: bool = True, g: int = 1, k: tuple[int, int] = (3, 3), e: float = 1.0):
+    def __init__(
+        self, c1: int, c2: int, shortcut: bool = True, g: int = 1, k: tuple[int, int] = (3, 3), e: float = 1.0
+    ):
         """Initialize DWConv Bottleneck.
 
         Args:
@@ -2263,8 +2270,8 @@ class C2f_Light(nn.Module):
         """Initialize C2f_Light with standard 1x1 Convs and DWConv Bottlenecks."""
         super().__init__()
         self.c = int(c2 * e)
-        self.cv1 = Conv(c1, 2 * self.c, 1, 1)            # 标准 1x1 Conv (兼容预训练)
-        self.cv2 = Conv((2 + n) * self.c, c2, 1)          # 标准 1x1 Conv (兼容预训练)
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)  # 标准 1x1 Conv (兼容预训练)
+        self.cv2 = Conv((2 + n) * self.c, c2, 1)  # 标准 1x1 Conv (兼容预训练)
         self.m = nn.ModuleList(
             DWConv_Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n)
         )
