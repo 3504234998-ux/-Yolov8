@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import os
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+import csv
 
 from ultralytics import YOLO
-import csv
-import glob
-from typing import Optional, Dict
 
 # ============================================================
 # 模型对比评估脚本 — 生成论文第5章实验表格数据
@@ -16,26 +18,21 @@ from typing import Optional, Dict
 EXPERIMENTS = [
     # === 基线 ===
     ("baseline_yolov8n", "YOLOv8n (基线)"),
-
     # === 单模块改进: 空间金字塔池化 ===
     ("improve_SPP", "SPP"),
     ("improve_SPPF", "SPPF"),
     ("improve_SimSPPF", "SimSPPF (本文)"),
     ("improve_SPPCSPC", "SPPCSPC (本文)"),
-
     # === 单模块改进: 损失函数 ===
     ("improve_SIoU", "SIoU (本文)"),
     ("improve_DIoU", "DIoU"),
     ("improve_GIoU", "GIoU"),
-
     # === 单模块改进: 注意力机制 ===
     ("improve_C2fSE", "C2f_SE (本文)"),
     ("improve_C2fPSA", "C2f_PSA"),
-
     # === 单模块改进: 轻量化 ===
     ("improve_DWConv", "C2f_DWConv (本文)"),
     ("compare_GhostConv", "GhostConv"),
-
     # === 消融组合 ===
     ("combo_SPPCSPC_SIoU", "SPPCSPC + SIoU"),
     ("combo_SPPCSPC_C2fSE", "SPPCSPC + C2f_SE"),
@@ -46,7 +43,7 @@ BASE_DIR = "runs/detect"
 DATA_YAML = "dataset/data.yaml"
 
 
-def evaluate_model(exp_dir: str, exp_name: str) -> Optional[Dict]:
+def evaluate_model(exp_dir: str, exp_name: str) -> dict | None:
     """评估单个模型并返回指标字典."""
     best_pt = os.path.join(BASE_DIR, exp_dir, "weights", "best.pt")
     if not os.path.exists(best_pt):
@@ -59,9 +56,10 @@ def evaluate_model(exp_dir: str, exp_name: str) -> Optional[Dict]:
 
         # 估计参数量 (从模型文件大小粗略估计)
         import torch
+
         ckpt = torch.load(best_pt, map_location="cpu", weights_only=False)
         if "model" in ckpt and hasattr(ckpt["model"], "yaml"):
-            model_info = ckpt["model"].yaml
+            ckpt["model"].yaml
             # 从yaml中获取nc信息
         params = sum(p.numel() for p in model.model.parameters()) / 1e6  # M
 
@@ -89,10 +87,12 @@ def main():
         result = evaluate_model(exp_dir, exp_name)
         if result:
             results_list.append(result)
-            print(f"  mAP50={result['mAP50']:.4f}  "
-                  f"mAP50-95={result['mAP50_95']:.4f}  "
-                  f"P={result['Precision']:.4f}  R={result['Recall']:.4f}  "
-                  f"Params={result['Params_M']:.2f}M")
+            print(
+                f"  mAP50={result['mAP50']:.4f}  "
+                f"mAP50-95={result['mAP50_95']:.4f}  "
+                f"P={result['Precision']:.4f}  R={result['Recall']:.4f}  "
+                f"Params={result['Params_M']:.2f}M"
+            )
 
     if not results_list:
         print("\n⚠️ 没有找到任何已完成的实验。请先运行 train.py。")
@@ -113,8 +113,10 @@ def main():
     print(f"\n{'实验名称':<35} {'mAP50':>8} {'mAP50-95':>10} {'P':>8} {'R':>8} {'Params(M)':>10}")
     print("-" * 80)
     for r in results_list:
-        print(f"{r['name']:<35} {r['mAP50']:>8.4f} {r['mAP50_95']:>10.4f} "
-              f"{r['Precision']:>8.4f} {r['Recall']:>8.4f} {r['Params_M']:>10.2f}")
+        print(
+            f"{r['name']:<35} {r['mAP50']:>8.4f} {r['mAP50_95']:>10.4f} "
+            f"{r['Precision']:>8.4f} {r['Recall']:>8.4f} {r['Params_M']:>10.2f}"
+        )
 
 
 if __name__ == "__main__":
