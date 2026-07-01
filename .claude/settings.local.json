@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xxd)",
+      "Bash(cp dataset/yolo_format/val/*.jpg dataset/images/val/)",
+      "Bash(cp dataset/yolo_format/val/*.txt dataset/labels/val/)"
+    ]
+  }
+}

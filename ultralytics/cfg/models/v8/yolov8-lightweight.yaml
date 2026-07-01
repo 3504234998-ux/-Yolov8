@@ -1,0 +1,45 @@
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
+# YOLOv8 轻量化版本: C2f_Light 替换标准 C2f
+# 改进: cv1/cv2 保留标准 1x1 Conv (兼容预训练权重), 仅 Bottleneck 的 3x3 Conv 替换为 DWConv
+# 预期: 参数量减少 ~20%, FLOPs 减少 ~18%, 精度损失 < 1%
+
+# Parameters
+nc: 80 # number of classes
+scales: # model compound scaling constants
+  n: [0.33, 0.25, 1024]
+  s: [0.33, 0.50, 1024]
+
+# YOLOv8 lightweight backbone with C2f_Light
+backbone:
+  # [from, repeats, module, args]
+  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+  - [-1, 3, C2f_Light, [128, True]]
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [-1, 6, C2f_Light, [256, True]]
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 6, C2f_Light, [512, True]]
+  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+  - [-1, 3, C2f_Light, [1024, True]]
+  - [-1, 1, SPPF, [1024, 5]] # 9
+
+# YOLOv8 lightweight head
+head:
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 6], 1, Concat, [1]]
+  - [-1, 3, C2f_Light, [512]] # 12
+
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 4], 1, Concat, [1]]
+  - [-1, 3, C2f_Light, [256]] # 15 (P3/8-small)
+
+  - [-1, 1, Conv, [256, 3, 2]]
+  - [[-1, 12], 1, Concat, [1]]
+  - [-1, 3, C2f_Light, [512]] # 18 (P4/16-medium)
+
+  - [-1, 1, Conv, [512, 3, 2]]
+  - [[-1, 9], 1, Concat, [1]]
+  - [-1, 3, C2f_Light, [1024]] # 21 (P5/32-large)
+
+  - [[15, 18, 21], 1, Detect, [nc]] # Detect(P3, P4, P5)
